@@ -1,7 +1,7 @@
 """Turns candles + news into one JSON-ready analysis result."""
-from .core import (atr, ema, liquidity_pools, killzone, market_open, utc, KH_OFFSET_H, HOUR)
-from .strategy import find_setup, watch_plan, MIN_SCORE
-from .news import news_block
+from core import (atr, ema, liquidity_pools, killzone, market_open, utc, KH_OFFSET_H, HOUR)
+from strategy import find_setup, watch_plan, MIN_SCORE
+from news import news_block
 
 
 def kh_time(ms):

@@ -1,6 +1,6 @@
 """Price data. PAXG (gold token) candles, shifted to spot XAUUSD level."""
 import time
-from .core import Candle
+from core import Candle
 
 BINANCE = ["https://data-api.binance.vision/api/v3/klines",   # public mirror, works from US servers
            "https://api.binance.com/api/v3/klines"]

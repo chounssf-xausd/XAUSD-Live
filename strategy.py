@@ -1,7 +1,7 @@
 """Liquidity Sweep + MSS + FVG strategy (sell logic; buy is the mirror image)."""
 import math
 from dataclasses import replace
-from .core import Candle, Pool, swings, killzone, CONTRACT_OZ
+from core import Candle, Pool, swings, killzone, CONTRACT_OZ
 
 LOOKBACK_SWEEP = 24     # look for sweeps in the last 2 hours of 5m candles
 MSS_WITHIN = 18         # MSS must follow the sweep within 90 minutes

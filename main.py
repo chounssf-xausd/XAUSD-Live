@@ -7,14 +7,14 @@ from datetime import datetime, timezone
 
 import requests
 
-from analyzer import data as D
-from analyzer.analyze import analyze, kh_time
-from analyzer.core import KH_OFFSET_H, HOUR, utc
-from analyzer.news import fetch_news, upcoming
-from analyzer.tracker import new_trade, update, stats, CLOSED
-from bot import messages as M
-from bot.chart import render
-from bot.telegram import Telegram
+import data as D
+from analyze import analyze, kh_time
+from core import KH_OFFSET_H, HOUR, utc
+from news import fetch_news, upcoming
+from tracker import new_trade, update, stats, CLOSED
+import messages as M
+from chart import render
+from tg_client import Telegram
 
 DEFAULT_STATE = {"owner": None, "offset_id": 0, "trades": [], "seen": [], "last_daily": None,
                  "balance": 1000.0, "risk_pct": 1.0, "price_offset": 0.0, "fail_count": 0}

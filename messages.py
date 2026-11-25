@@ -1,7 +1,7 @@
 """Khmer Telegram messages (HTML)."""
 from html import escape
-from analyzer.analyze import kh_time
-from analyzer.strategy import lot_size
+from analyze import kh_time
+from strategy import lot_size
 
 SIDE = {"sell": "🔴 លក់ (SELL)", "buy": "🟢 ទិញ (BUY)"}
 STATUS = {"SELL": "🔴 លក់", "BUY": "🟢 ទិញ", "WAIT": "🟡 រង់ចាំ", "CLOSED": "⚪ ផ្សារបិទ"}
