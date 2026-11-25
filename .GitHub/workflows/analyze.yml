@@ -1,0 +1,55 @@
+name: Gold Live Analyzer
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"     # every 5 minutes (GitHub may run it a bit late)
+  workflow_dispatch:          # lets you press "Run workflow" by hand
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gold-live
+  cancel-in-progress: false
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -r requirements.txt
+
+      - name: Open the data branch
+        run: |
+          git config user.name "gold-live-bot"
+          git config user.email "gold-live-bot@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin data >/dev/null; then
+            git fetch --depth 1 origin data
+            git worktree add store origin/data
+            cd store && git checkout -B data
+          else
+            git worktree add --detach store
+            cd store && git checkout --orphan data && git rm -rfq . && rm -rf ./*
+          fi
+
+      - name: Analyze gold
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          STORE_DIR: store
+        run: python main.py
+
+      - name: Save results
+        run: |
+          cd store
+          git checkout -q --orphan fresh      # keep only the newest copy, so the repo stays small
+          git add -A
+          git commit -qm "analysis $(date -u +%H:%M)"
+          git push -qf origin fresh:data
