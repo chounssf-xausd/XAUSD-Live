@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gold Live</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🟡</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root {
+  --bg: #17130e; --surface: #211b14; --raise: #2a231a; --line: #3a3026;
+  --ink: #f3e9d4; --muted: #a89878; --gold: #e0b04a; --gold-deep: #9c7426;
+  --sell: #e2604f; --buy: #43b98d; --on-gold: #2a1d07;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #efe9dc; --surface: #fbf8f1; --raise: #f3ecdd; --line: #dccfb6;
+  --ink: #2a2116; --muted: #7a6a50; --gold: #c9952c; --gold-deep: #8a6420;
+  --sell: #c94634; --buy: #2b9670; --on-gold: #2a1d07;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); }
+body {
+  font-family: "Kantumruy Pro", "Noto Sans Khmer", "Khmer OS Battambang", system-ui, sans-serif;
+  font-size: 15px; line-height: 1.6;
+  padding: env(safe-area-inset-top, 0) 0 env(safe-area-inset-bottom, 0);
+}
+.num { font-variant-numeric: tabular-nums; }
+main { max-width: 560px; margin: 0 auto; padding: 14px 14px 40px; }
+h2 { font-size: 17px; font-weight: 600; margin: 0 0 10px; }
+section { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-top: 12px; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+
+/* top bar */
+.top { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; }
+.brand { font-weight: 700; font-size: 20px; letter-spacing: .2px; }
+.price { text-align: right; }
+.price b { font-size: 26px; font-weight: 700; display: block; line-height: 1.1; }
+.up { color: var(--buy); } .down { color: var(--sell); }
+.times { display: flex; justify-content: space-between; margin-top: 6px; }
+
+/* the ingot */
+.verdict { display: grid; grid-template-columns: 150px 1fr; gap: 14px; align-items: center; margin-top: 16px; }
+.ingot {
+  height: 92px; display: grid; place-items: center; position: relative;
+  clip-path: polygon(10% 0, 90% 0, 100% 100%, 0 100%);
+  background: linear-gradient(160deg, #f6d98a 0%, var(--gold) 45%, var(--gold-deep) 100%);
+  color: var(--on-gold); font-size: 34px; font-weight: 700;
+}
+.ingot::after { content: ""; position: absolute; inset: 8px 18px auto; height: 2px; background: rgba(255,255,255,.45); }
+.ingot.SELL { background: linear-gradient(160deg, #f39a88 0%, var(--sell) 50%, #8f2c20 100%); color: #fff; }
+.ingot.BUY  { background: linear-gradient(160deg, #8fe0c1 0%, var(--buy) 50%, #1d6a4f 100%); color: #fff; }
+.ingot.CLOSED { background: linear-gradient(160deg, #cfc6b4, #8c826f); }
+.headline { font-weight: 600; font-size: 16px; }
+.meter { height: 6px; background: var(--raise); border-radius: 3px; margin-top: 8px; overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--gold); width: 0; transition: width .6s; }
+.summary { margin: 12px 0 0; }
+
+/* plan grid */
+.levels { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.lv { background: var(--raise); border-radius: 10px; padding: 8px 10px; }
+.lv span { display: block; font-size: 12px; color: var(--muted); }
+.lv b { font-size: 17px; }
+.lv.sl b { color: var(--sell); } .lv.tp b { color: var(--buy); } .lv.en b { color: var(--gold); }
+.lv.wide { grid-column: span 2; }
+.plan + .plan { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); }
+.plan h3 { font-size: 15px; margin: 0 0 4px; }
+.side-sell { color: var(--sell); } .side-buy { color: var(--buy); }
+
+ul.check { list-style: none; margin: 0; padding: 0; }
+ul.check li { display: flex; gap: 8px; padding: 4px 0; }
+ul.check li::before { content: "○"; color: var(--muted); }
+ul.check li.ok::before { content: "●"; color: var(--buy); }
+
+table { width: 100%; border-collapse: collapse; }
+td { padding: 6px 0; border-bottom: 1px solid var(--line); }
+td:last-child { text-align: right; }
+.tag { font-size: 12px; padding: 1px 8px; border-radius: 10px; background: var(--raise); }
+.tag.high { color: var(--sell); } .tag.low { color: var(--buy); }
+
+label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 2px; }
+input {
+  width: 100%; font: inherit; color: var(--ink); background: var(--raise);
+  border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px;
+}
+input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.calc { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.result { margin-top: 10px; font-size: 18px; font-weight: 600; }
+
+details summary { cursor: pointer; font-weight: 600; list-style: none; }
+details summary::-webkit-details-marker { display: none; }
+details summary::after { content: "＋"; float: right; color: var(--muted); }
+details[open] summary::after { content: "－"; }
+#tv { height: 380px; margin-top: 10px; }
+svg text { font-family: inherit; }
+.empty { text-align: center; padding: 30px 10px; }
+.warn { border-color: var(--gold-deep); }
+footer { margin-top: 18px; font-size: 12px; color: var(--muted); text-align: center; }
+@media (prefers-reduced-motion: reduce) { .meter i { transition: none; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div>
+      <div class="brand">Gold Live</div>
+      <div class="muted small">XAUUSD ក្របខ័ណ្ឌ 5 នាទី</div>
+    </div>
+    <div class="price"><b class="num" id="price">—</b><span class="num small" id="chg"></span></div>
+  </div>
+  <div class="times muted small"><span id="updated">កំពុងផ្ទុក…</span><span id="next"></span></div>
+
+  <div id="app"></div>
+
+  <footer>
+    តម្លៃពី <span id="src">Binance PAXG</span> កែតម្រូវទៅតម្លៃ spot។ នេះជាជំនួយវិភាគ មិនមែនការធានាថាឈ្នះទេ។
+  </footer>
+</main>
+
+<script>
+const tg = window.Telegram && window.Telegram.WebApp;
+if (tg) { try { tg.ready(); tg.expand(); } catch (e) {} }
+const scheme = (tg && tg.colorScheme) || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+document.documentElement.dataset.theme = scheme;
+
+// where the bot saves its results: https://raw.githubusercontent.com/<owner>/<repo>/data/
+const qs = new URLSearchParams(location.search);
+function dataBase() {
+  if (qs.get("data")) return qs.get("data").replace(/\/?$/, "/");
+  const owner = location.hostname.split(".")[0];
+  const parts = location.pathname.split("/").filter(Boolean);
+  const repo = parts[0] || `${owner}.github.io`;
+  return `https://raw.githubusercontent.com/${owner}/${repo}/data/`;
+}
+const BASE = dataBase();
+const KH = { timeZone: "Asia/Phnom_Penh", hour: "2-digit", minute: "2-digit", hour12: false };
+const fmt = (x, d = 2) => x == null || isNaN(x) ? "—" : Number(x).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+const khTime = ms => new Date(ms).toLocaleTimeString("en-GB", KH);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const WORD = { WAIT: "រង់ចាំ", SELL: "លក់", BUY: "ទិញ", CLOSED: "បិទ" };
+const SIDE = { sell: "លក់ (SELL)", buy: "ទិញ (BUY)" };
+
+let latest = null, history = null, offset = 0;
+
+function store(key, val) {
+  try { if (val === undefined) return localStorage.getItem(key); localStorage.setItem(key, val); } catch (e) { return null; }
+}
+
+async function getJSON(name) {
+  const r = await fetch(BASE + name + "?t=" + Date.now(), { cache: "no-store" });
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+async function load() {
+  try {
+    const [l, h] = await Promise.all([getJSON("latest.json"), getJSON("history.json").catch(() => null)]);
+    if (latest && l.generated_ms === latest.generated_ms) return;   // nothing new, keep the page as it is
+    latest = l; history = h;
+    offset = latest.offset || 0;
+    render();
+  } catch (e) {
+    if (latest) return;   // keep showing the last good result
+    document.getElementById("updated").textContent = "";
+    document.getElementById("app").innerHTML = `<section class="empty">
+      <h2>មិនទាន់មានទិន្នន័យ</h2>
+      <p class="muted">Bot មិនទាន់វិភាគលើកដំបូងទេ។ ចូលទៅ GitHub ផ្ទាំង Actions ហើយចុច “Run workflow” ម្តង រួចរង់ចាំ 2 នាទី។</p>
+    </section>`;
+  }
+}
+
+async function livePrice() {
+  try {
+    const r = await fetch("https://data-api.binance.vision/api/v3/ticker/24hr?symbol=PAXGUSDT", { cache: "no-store" });
+    const t = await r.json();
+    const p = parseFloat(t.lastPrice) + offset, ch = parseFloat(t.priceChange), pct = parseFloat(t.priceChangePercent);
+    document.getElementById("price").textContent = fmt(p);
+    const el = document.getElementById("chg");
+    el.textContent = `${ch >= 0 ? "+" : ""}${fmt(ch)} (${pct >= 0 ? "+" : ""}${fmt(pct)}%)`;
+    el.className = "num small " + (ch >= 0 ? "up" : "down");
+  } catch (e) { /* keep last value */ }
+}
+
+function lotFor(dist) {
+  const bal = parseFloat(store("bal") || latest?.balance || 1000);
+  const risk = parseFloat(store("risk") || latest?.risk_pct || 1);
+  const dollars = bal * risk / 100;
+  const lot = dist > 0 ? Math.floor(dollars / (dist * 100) * 100 + 1e-9) / 100 : 0;
+  return { bal, risk, dollars, lot };
+}
+
+function levelGrid(p) {
+  const mid = (p.entry_top + p.entry_bottom) / 2, dist = Math.abs(p.sl - mid);
+  const l = lotFor(dist);
+  const lotTxt = l.lot >= 0.01 ? `${l.lot.toFixed(2)} lot` : `តិចជាង 0.01 (0.01 lot = $${fmt(dist)})`;
+  return `<div class="levels">
+    <div class="lv en wide"><span>តំបន់ចូល</span><b class="num">${fmt(p.entry_bottom)} – ${fmt(p.entry_top)}</b></div>
+    <div class="lv sl"><span>ឈប់ខាត SL (ចម្ងាយ ${fmt(dist)})</span><b class="num">${fmt(p.sl)}</b></div>
+    <div class="lv"><span>ទំហំ (ប្រថុយ $${fmt(l.dollars)})</span><b class="num">${lotTxt}</b></div>
+    <div class="lv tp"><span>TP1 R:R 1:${fmt(p.rr1, 1)} ${esc(p.tp1_name)}</span><b class="num">${fmt(p.tp1)}</b></div>
+    <div class="lv tp"><span>TP2 R:R 1:${fmt(p.rr2, 1)} ${esc(p.tp2_name)}</span><b class="num">${fmt(p.tp2)}</b></div>
+  </div>`;
+}
+
+function chartSVG(d) {
+  const c = (d.candles || []).slice(-96);
+  if (!c.length) return "";
+  const s = d.setup;
+  const W = 520, H = 260, R = 64;
+  let lo = Math.min(...c.map(x => x[3])), hi = Math.max(...c.map(x => x[2]));
+  if (s) { lo = Math.min(lo, s.tp1); hi = Math.max(hi, s.sl); }
+  const pad = (hi - lo) * 0.06; lo -= pad; hi += pad;
+  const y = v => H - (v - lo) / (hi - lo) * H;
+  const cw = (W - R) / c.length;
+  let g = "";
+  c.forEach((x, i) => {
+    const up = x[4] >= x[1], col = up ? "var(--buy)" : "var(--sell)", cx = i * cw + cw / 2;
+    g += `<line x1="${cx}" x2="${cx}" y1="${y(x[2])}" y2="${y(x[3])}" stroke="${col}" stroke-width="1"/>`;
+    g += `<rect x="${cx - cw * .35}" y="${y(Math.max(x[1], x[4]))}" width="${cw * .7}" height="${Math.max(1, Math.abs(y(x[1]) - y(x[4])))}" fill="${col}"/>`;
+  });
+  const used = [];
+  const line = (v, label, col, dash) => {
+    if (v < lo || v > hi) return "";
+    let t = `<line x1="0" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="${col}" stroke-dasharray="${dash}" stroke-width="1" opacity=".9"/>`;
+    if (used.every(u => Math.abs(u - y(v)) > 11)) {
+      used.push(y(v));
+      t += `<text x="${W - R + 4}" y="${y(v) + 4}" font-size="10" fill="${col}">${label} ${fmt(v)}</text>`;
+    }
+    return t;
+  };
+  let lv = "";
+  if (s) {
+    lv += `<rect x="${(c.length - 12) * cw}" y="${y(s.entry_top)}" width="${W - R - (c.length - 12) * cw}" height="${y(s.entry_bottom) - y(s.entry_top)}" fill="var(--gold)" opacity=".22"/>`;
+    lv += line(s.sl, "SL", "var(--sell)", "") + line(s.entry_top, "ចូល", "var(--gold)", "") + line(s.tp1, "TP1", "var(--buy)", "") + line(s.tp2, "TP2", "var(--buy)", "");
+  }
+  [...(d.pools || [])].sort((a, b) => b.major - a.major).forEach(p => lv += line(p.price, p.name.replace("Swing ", "S."), "var(--muted)", "2 3"));
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="តារាងតម្លៃ 5 នាទី ជាមួយកម្រិត liquidity">${lv}${g}</svg>`;
+}
+
+function render() {
+  const d = latest;
+  document.getElementById("updated").textContent = d.generated_ms ? `វិភាគចុងក្រោយ ${khTime(d.generated_ms)}` : "";
+  document.getElementById("next").textContent = d.generated_ms ? `លើកក្រោយប្រហែល ${khTime(d.generated_ms + 5 * 60000)}` : "";
+  document.getElementById("src").textContent = d.source || "Binance PAXG";
+  if (d.price && document.getElementById("price").textContent === "—") document.getElementById("price").textContent = fmt(d.price);
+
+  if (d.error) {
+    document.getElementById("app").innerHTML = `<section class="warn"><h2>មានបញ្ហាយកតម្លៃ</h2><p class="muted">${esc(d.error)}</p><p class="small">Bot នឹងព្យាយាមម្តងទៀតក្នុងរង្វង់បន្ទាប់។</p></section>`;
+    return;
+  }
+  const st = d.status || "WAIT";
+  const score = (d.setup || d.weak_setup || {}).score || 0;
+  let html = `<div class="verdict">
+      <div class="ingot ${st}" role="img" aria-label="ស្ថានភាព ${WORD[st]}">${WORD[st]}</div>
+      <div><div class="headline">${esc(d.headline)}</div>
+        ${score ? `<div class="meter" title="ពិន្ទុ ${score}/100"><i style="width:${score}%"></i></div><div class="small muted">ពិន្ទុ ${score}/100</div>` : ""}
+      </div>
+    </div>
+    <p class="summary">${esc(d.summary)}</p>`;
+
+  if (!d.offset_ok && st !== "CLOSED") html += `<section class="warn small">មិនអាចយកតម្លៃ spot បាន — តម្លៃអាចខុសពី OANDA ពីរបីដុល្លារ។</section>`;
+
+  if (d.setup) {
+    const s = d.setup;
+    html += `<section><h2 class="side-${s.side}">សញ្ញា ${SIDE[s.side]}</h2>${levelGrid(s)}
+      <p class="small muted">បោស ${esc(s.swept)} (${fmt(s.swept_price)}) → MSS ក្រោម/លើ ${fmt(s.mss_ref)} → FVG។ ${s.reasons.map(esc).join("។ ")}។</p></section>`;
+  }
+
+  if (d.candles && d.candles.length) html += `<section><h2>តារាង និងកម្រិតសំខាន់</h2>${chartSVG(d)}</section>`;
+
+  if (d.checklist && d.checklist.length) {
+    html += `<section><h2>លក្ខខណ្ឌចូល</h2><ul class="check">${d.checklist.map(c => `<li class="${c.ok ? "ok" : ""}">${esc(c.text)}</li>`).join("")}</ul></section>`;
+  }
+
+  if (!d.setup && d.plans) {
+    const plans = ["sell", "buy"].map(k => d.plans[k]).filter(Boolean);
+    if (plans.length) html += `<section><h2>ផែនការរង់ចាំ</h2><p class="small muted">មិនមែនជាសញ្ញាទេ។ ប្រើតែពេលតម្លៃបោសកម្រិតនោះ ហើយមាន MSS និង FVG។</p>` +
+      plans.map(p => `<div class="plan"><h3 class="side-${p.side}">${SIDE[p.side]} បើតម្លៃបោស ${esc(p.level)} (${fmt(p.level_price)})</h3>${levelGrid(p)}</div>`).join("") + `</section>`;
+  }
+
+  if (d.pools && d.pools.length) {
+    html += `<section><h2>កម្រិត Liquidity</h2><table class="num">${d.pools.filter(p => p.major).map(p =>
+      `<tr><td><span class="tag ${p.kind}">${p.kind === "high" ? "លើ" : "ក្រោម"}</span> ${esc(p.name)}</td><td>${fmt(p.price)}</td></tr>`).join("")}</table>
+      <p class="small muted">ATR(14) = ${fmt(d.atr)} • EMA50 1H = ${fmt(d.bias && d.bias.ema50)}</p></section>`;
+  }
+
+  const firstDist = d.setup ? Math.abs(d.setup.sl - (d.setup.entry_top + d.setup.entry_bottom) / 2) : 5;
+  const l = lotFor(firstDist);
+  html += `<section><h2>គណនាទំហំ Lot</h2>
+    <div class="calc">
+      <div><label for="bal">ទុន ($)</label><input id="bal" inputmode="decimal" value="${l.bal}"></div>
+      <div><label for="risk">ប្រថុយ (%)</label><input id="risk" inputmode="decimal" value="${l.risk}"></div>
+      <div><label for="dist">ចម្ងាយ SL ($)</label><input id="dist" inputmode="decimal" value="${firstDist.toFixed(2)}"></div>
+    </div>
+    <div class="result num" id="lotout"></div>
+    <p class="small muted">1 lot XAUUSD = 100 oz ដូច្នេះ $1 ផ្លាស់ទី = $100 ក្នុង 1 lot។</p></section>`;
+
+  const news = d.news || [];
+  html += `<section><h2>ព័ត៌មាន USD ខាងមុខ</h2>${news.length ? `<table>${news.slice(0, 10).map(e =>
+      `<tr><td>${e.impact === "High" ? "🔴" : "🟠"} ${esc(e.title)}</td><td class="num">${new Date(e.time_ms).toLocaleString("en-GB", { ...KH, weekday: "short" })}</td></tr>`).join("")}</table>`
+      : `<p class="muted">គ្មានព័ត៌មាន USD សំខាន់ក្នុង 48 ម៉ោងខាងមុខ។</p>`}
+    <p class="small muted">🔴 ធំ: Bot ឈប់ផ្ញើសញ្ញា 30 នាទីមុន ដល់ 15 នាទីក្រោយ។ ម៉ោងកម្ពុជា។</p></section>`;
+
+  if (history) {
+    const s = history.stats || {}, trades = history.trades || [];
+    const ST = { pending: "រង់ចាំចូល", open: "កំពុងបើក", tp1: "TP1 ✓", tp2: "TP2 ✓", be: "ស្មើចំណុចចូល", sl: "SL ✗", expired: "ផុតកំណត់" };
+    html += `<section><h2>លទ្ធផលសញ្ញា</h2>
+      <p>${s.wins + s.losses ? `ឈ្នះ ${s.wins} ចាញ់ ${s.losses} — អត្រាឈ្នះ <b>${s.win_rate}%</b> សរុប <b class="num">${s.total_r >= 0 ? "+" : ""}${fmt(s.total_r, 1)}R</b>` : "មិនទាន់មានសញ្ញាបញ្ចប់នៅឡើយ។"}</p>
+      ${trades.length ? `<table>${trades.slice(0, 12).map(t => `<tr><td><span class="side-${t.side}">${t.side === "sell" ? "លក់" : "ទិញ"}</span> <span class="num">${fmt(t.entry_bottom)}–${fmt(t.entry_top)}</span><br><span class="small muted">${new Date(t.created_t).toLocaleString("en-GB", { ...KH, day: "2-digit", month: "short" })}</span></td><td>${ST[t.status] || t.status}${t.result_r != null ? `<br><span class="small num">${t.result_r >= 0 ? "+" : ""}${t.result_r}R</span>` : ""}</td></tr>`).join("")}</table>` : ""}
+    </section>`;
+  }
+
+  html += `<section><details id="tvbox"><summary>តារាងផ្ទាល់ TradingView (OANDA)</summary><div id="tv"></div></details></section>`;
+
+  document.getElementById("app").innerHTML = html;
+  bindCalc();
+  document.getElementById("tvbox").addEventListener("toggle", openTV, { once: true });
+}
+
+function bindCalc() {
+  const ids = ["bal", "risk", "dist"];
+  const calc = () => {
+    const [b, r, dist] = ids.map(i => parseFloat(document.getElementById(i).value.replace(/,/g, "")));
+    const out = document.getElementById("lotout");
+    if (!(b > 0 && r > 0 && dist > 0)) { out.textContent = "សូមបញ្ចូលលេខធំជាង 0"; return; }
+    store("bal", b); store("risk", r);
+    const dollars = b * r / 100, lot = Math.floor(dollars / (dist * 100) * 100 + 1e-9) / 100;
+    out.textContent = lot >= 0.01 ? `${lot.toFixed(2)} lot (ប្រថុយ $${fmt(dollars)})` : `តិចជាង 0.01 lot — 0.01 lot ប្រថុយ $${fmt(dist)}`;
+  };
+  ids.forEach(i => document.getElementById(i).addEventListener("input", calc));
+  calc();
+}
+
+function openTV() {
+  const s = document.createElement("script");
+  s.src = "https://s3.tradingview.com/tv.js";
+  s.onload = () => new TradingView.widget({
+    container_id: "tv", autosize: true, symbol: "OANDA:XAUUSD", interval: "5",
+    timezone: "Asia/Phnom_Penh", theme: scheme === "light" ? "light" : "dark", style: "1",
+    locale: "en", hide_side_toolbar: true, allow_symbol_change: false, studies: ["MAExp@tv-basicstudies"]
+  });
+  document.body.appendChild(s);
+}
+
+load();
+livePrice();
+setInterval(livePrice, 10000);
+setInterval(load, 60000);
+</script>
+</body>
+</html>
